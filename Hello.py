@@ -112,13 +112,15 @@ else:
         yaxis=dict(
             title="Pedidos",
             side="left",
-            color="#1f77b4"
+            color="#1f77b4",
+            range=[0, df["pedidos"].max() * 1.1]  # Ajustar rango para pedidos
         ),
         yaxis2=dict(
             title="Ventas (€)",
             overlaying="y",
             side="right",
-            color="#ff7f0e"
+            color="#ff7f0e",
+            range=[0, df["ventas"].max() * 1.1]  # Ajustar rango para ventas
         ),
         legend=dict(x=0.01, y=0.99),
         margin=dict(l=50, r=50, t=60, b=40),
