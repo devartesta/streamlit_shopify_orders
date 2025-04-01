@@ -4,7 +4,7 @@ import psycopg2
 import plotly.express as px
 from datetime import date, timedelta
 
-# Conexión a PostgreSQL
+# Conexión a PostgreSQL usando GitHub/Streamlit secrets
 def get_connection():
     return psycopg2.connect(
         host=st.secrets["DBHOST"],
@@ -14,7 +14,7 @@ def get_connection():
         port=st.secrets["DBPORT"]
     )
 
-# Obtener lista de países disponibles
+# Obtener lista de países únicos
 @st.cache_data
 def get_country_list():
     with get_connection() as conn:
@@ -24,7 +24,7 @@ def get_country_list():
         )
     return ["Todos"] + sorted(df["shipping_country"].dropna().tolist())
 
-# Consulta de evolución por fecha y país
+# Consulta de evolución diaria
 def fetch_evolution(start_date, end_date, country):
     with get_connection() as conn:
         query = f"""
@@ -44,32 +44,31 @@ def fetch_evolution(start_date, end_date, country):
             params.append(country)
         return pd.read_sql(query, conn, params=params)
 
-# Streamlit App
+# Interfaz Streamlit
 st.title("📦 Evolución de pedidos y ventas")
 
-# Filtros de usuario
+# Filtros
 default_start = date.today() - timedelta(days=30)
 default_end = date.today()
 
 start_date = st.date_input("📅 Desde", default_start)
 end_date = st.date_input("📅 Hasta", default_end)
-
 country = st.selectbox("🌍 País", get_country_list())
 
-# Cargar datos
+# Carga de datos
 try:
     df = fetch_evolution(start_date, end_date, country)
 except Exception as e:
     st.error(f"❌ Error al consultar la base de datos: {e}")
     st.stop()
 
-# Mostrar resultados
+# Gráfico + tabla
 if df.empty:
     st.warning("⚠️ No hay datos para el rango seleccionado.")
 else:
     fig = px.line(
-        df, 
-        x="fecha", 
+        df,
+        x="fecha",
         y=["pedidos", "ventas"],
         markers=True,
         labels={"value": "Cantidad", "fecha": "Fecha", "variable": "Métrica"},
