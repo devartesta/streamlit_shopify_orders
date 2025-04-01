@@ -4,7 +4,7 @@ import psycopg2
 import plotly.express as px
 from datetime import date, timedelta
 
-# Conexión a PostgreSQL usando GitHub/Streamlit secrets
+# 🔌 Conexión a PostgreSQL usando secretos de Streamlit Cloud o .streamlit/secrets.toml
 def get_connection():
     return psycopg2.connect(
         host=st.secrets["DBHOST"],
@@ -14,7 +14,7 @@ def get_connection():
         port=st.secrets["DBPORT"]
     )
 
-# Obtener lista de países únicos
+# 🌍 Lista de países únicos
 @st.cache_data
 def get_country_list():
     with get_connection() as conn:
@@ -24,11 +24,11 @@ def get_country_list():
         )
     return ["Todos"] + sorted(df["shipping_country"].dropna().tolist())
 
-# Consulta de evolución diaria
+# 📈 Consulta de evolución diaria de pedidos y ventas
 def fetch_evolution(start_date, end_date, country):
     with get_connection() as conn:
         query = f"""
-        WITH pedidos_por_dia AS (
+        WITH pedidos_dia AS (
             SELECT
                 order_id,
                 fulfillment_created_at::date AS fecha,
@@ -39,23 +39,21 @@ def fetch_evolution(start_date, end_date, country):
             {f"AND shipping_country = %s" if country != 'Todos' else ""}
             GROUP BY order_id, fecha, shipping_country
         )
-        SELECT 
+        SELECT
             fecha,
             shipping_country,
             COUNT(order_id) AS pedidos,
             SUM(total) AS ventas
-        FROM pedidos_por_dia
+        FROM pedidos_dia
         GROUP BY fecha, shipping_country
         ORDER BY fecha;
         """
-
         params = [start_date, end_date]
         if country != 'Todos':
             params.append(country)
         return pd.read_sql(query, conn, params=params)
 
-
-# Interfaz Streamlit
+# 🚀 App Streamlit
 st.title("📦 Evolución de pedidos y ventas")
 
 # Filtros
@@ -66,26 +64,37 @@ start_date = st.date_input("📅 Desde", default_start)
 end_date = st.date_input("📅 Hasta", default_end)
 country = st.selectbox("🌍 País", get_country_list())
 
-# Carga de datos
+# Cargar datos
 try:
     df = fetch_evolution(start_date, end_date, country)
 except Exception as e:
     st.error(f"❌ Error al consultar la base de datos: {e}")
     st.stop()
 
-# Gráfico + tabla
+# Mostrar resultados
 if df.empty:
     st.warning("⚠️ No hay datos para el rango seleccionado.")
 else:
+    # Transformar para gráfico multivariable
+    df_long = df.melt(
+        id_vars=["fecha"],
+        value_vars=["pedidos", "ventas"],
+        var_name="Métrica",
+        value_name="Cantidad"
+    )
+
+    # Gráfico con Plotly
     fig = px.line(
-        df,
+        df_long,
         x="fecha",
-        y=["pedidos", "ventas"],
+        y="Cantidad",
+        color="Métrica",
         markers=True,
-        labels={"value": "Cantidad", "fecha": "Fecha", "variable": "Métrica"},
+        labels={"Cantidad": "Cantidad", "fecha": "Fecha", "Métrica": "Métrica"},
         title=f"Evolución diaria de pedidos y ventas - {country}"
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("📄 Vista previa de datos")
+    # Vista previa de datos
+    st.subheader("📄 Vista previa de los datos")
     st.dataframe(df)
