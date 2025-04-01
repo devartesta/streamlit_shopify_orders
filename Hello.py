@@ -116,24 +116,23 @@ else:
     # KPIs antes de la tabla
     st.markdown("### 📊 Resumen Estadístico")
 col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.markdown("**Total Pedidos**")
+    st.markdown(f"<h2 style='color: #1f77b4;'>{int(df['pedidos'].sum()):,}</h2>", unsafe_allow_html=True)
 
-    with col1:
-        st.markdown("**Total Pedidos**")
-        st.markdown(f"<h2 style='color: #1f77b4;'>{int(df['pedidos'].sum()):,}</h2>", unsafe_allow_html=True)
+with col2:
+    st.markdown("**Total Ventas**")
+    st.markdown(f"<h2 style='color: #ff7f0e;'>€{df['ventas'].sum():,.2f}</h2>", unsafe_allow_html=True)
 
-    with col2:
-        st.markdown("**Total Ventas**")
-        st.markdown(f"<h2 style='color: #ff7f0e;'>€{df['ventas'].sum():,.2f}</h2>", unsafe_allow_html=True)
+with col3:
+    st.markdown("**Promedio Diario de Pedidos**")
+    st.markdown(f"<h2 style='color: #2ca02c;'>{promedio_diario_pedidos:,.1f}</h2>", unsafe_allow_html=True)
 
-    with col3:
-        st.markdown("**Promedio Diario de Pedidos**")
-        st.markdown(f"<h2 style='color: #2ca02c;'>{promedio_diario_pedidos:,.1f}</h2>", unsafe_allow_html=True)
-
-    with col4:
-        st.markdown("**Promedio Diario de Ventas**")
-        st.markdown(f"<h2 style='color: #d62728;'>€{promedio_diario_ventas:,.2f}</h2>", unsafe_allow_html=True)
-        # Minigráfico para promedio diario de ventas
-        df["promedio_ventas_diario"] = df.apply(lambda row: row["ventas"] / 1 if vista == "Diaria" else row["ventas"] / 7 if vista == "Semanal" else row["ventas"] / monthrange(pd.Timestamp(row["fecha"]).year, pd.Timestamp(row["fecha"]).month)[1], axis=1)
+with col4:
+    st.markdown("**Promedio Diario de Ventas**")
+    st.markdown(f"<h2 style='color: #d62728;'>€{promedio_diario_ventas:,.2f}</h2>", unsafe_allow_html=True)
+    # Minigráfico para promedio diario de ventas
+    df["promedio_ventas_diario"] = df.apply(lambda row: row["ventas"] / 1 if vista == "Diaria" else row["ventas"] / 7 if vista == "Semanal" else row["ventas"] / monthrange(pd.Timestamp(row["fecha"]).year, pd.Timestamp(row["fecha"]).month)[1], axis=1)
 
 #    # Formatear datos para la tabla
 #    df_display = df.copy()
