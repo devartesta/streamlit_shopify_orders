@@ -130,15 +130,6 @@ col1, col2, col3, col4 = st.columns(4)
             fill="tozeroy",
             fillcolor="rgba(31, 119, 180, 0.2)"
         ))
-        fig_pedidos.update_layout(
-            height=100,
-            margin=dict(l=0, r=0, t=0, b=0),
-            showlegend=False,
-            xaxis=dict(visible=False, showgrid=False, zeroline=False),
-            yaxis=dict(visible=False, showgrid=False, zeroline=False),
-            template="plotly_dark"
-        )
-        st.plotly_chart(fig_pedidos, use_container_width=True)
 
     with col2:
         st.markdown("**Total Ventas**")
@@ -153,15 +144,6 @@ col1, col2, col3, col4 = st.columns(4)
             fill="tozeroy",
             fillcolor="rgba(255, 127, 14, 0.2)"
         ))
-        fig_ventas.update_layout(
-            height=100,
-            margin=dict(l=0, r=0, t=0, b=0),
-            showlegend=False,
-            xaxis=dict(visible=False, showgrid=False, zeroline=False),
-            yaxis=dict(visible=False, showgrid=False, zeroline=False),
-            template="plotly_dark"
-        )
-        st.plotly_chart(fig_ventas, use_container_width=True)
 
     with col3:
         st.markdown("**Promedio Diario de Pedidos**")
@@ -176,14 +158,6 @@ col1, col2, col3, col4 = st.columns(4)
             fill="tozeroy",
             fillcolor="rgba(44, 160, 44, 0.2)"
         ))
-        fig_promedio_pedidos.update_layout(
-            height=100,
-            margin=dict(l=0, r=0, t=0, b=0),
-            showlegend=False,
-            xaxis=dict(visible=False, showgrid=False, zeroline=False),
-            yaxis=dict(visible=False, showgrid=False, zeroline=False),
-            template="plotly_dark"
-        )
         st.plotly_chart(fig_promedio_pedidos, use_container_width=True)
 
     with col4:
@@ -200,14 +174,6 @@ col1, col2, col3, col4 = st.columns(4)
             fill="tozeroy",
             fillcolor="rgba(214, 39, 40, 0.2)"
         ))
-        fig_promedio_ventas.update_layout(
-            height=100,
-            margin=dict(l=0, r=0, t=0, b=0),
-            showlegend=False,
-            xaxis=dict(visible=False, showgrid=False, zeroline=False),
-            yaxis=dict(visible=False, showgrid=False, zeroline=False),
-            template="plotly_dark"
-        )
         st.plotly_chart(fig_promedio_ventas, use_container_width=True)
 
 #    # Formatear datos para la tabla
