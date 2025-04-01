@@ -115,7 +115,7 @@ else:
 
     # KPIs antes de la tabla
     st.markdown("### 📊 Resumen Estadístico")
-    col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.markdown("**Total Pedidos**")
@@ -134,7 +134,7 @@ else:
             height=100,
             margin=dict(l=0, r=0, t=0, b=0),
             showlegend=False,
-            xaxis=dict(show=False, showgrid=False, zeroline=False),
+            xaxis=dict(visible=False, showgrid=False, zeroline=False),
             yaxis=dict(visible=False, showgrid=False, zeroline=False),
             template="plotly_dark"
         )
@@ -190,7 +190,6 @@ else:
         st.markdown("**Promedio Diario de Ventas**")
         st.markdown(f"<h2 style='color: #d62728;'>€{promedio_diario_ventas:,.2f}</h2>", unsafe_allow_html=True)
         # Minigráfico para promedio diario de ventas
-        # Para calcular el promedio diario de ventas por período, necesitamos dividir las ventas por el número de días en cada período
         df["promedio_ventas_diario"] = df.apply(lambda row: row["ventas"] / 1 if vista == "Diaria" else row["ventas"] / 7 if vista == "Semanal" else row["ventas"] / monthrange(pd.Timestamp(row["fecha"]).year, pd.Timestamp(row["fecha"]).month)[1], axis=1)
         fig_promedio_ventas = go.Figure()
         fig_promedio_ventas.add_trace(go.Scatter(
