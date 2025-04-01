@@ -77,6 +77,11 @@ except Exception as e:
 if df.empty:
     st.warning("⚠️ No hay datos para el rango seleccionado.")
 else:
+    df = df.sort_values("fecha")
+    df["fecha"] = pd.to_datetime(df["fecha"])
+    df["pedidos"] = pd.to_numeric(df["pedidos"], errors="coerce")
+    df["ventas"] = pd.to_numeric(df["ventas"], errors="coerce")
+
     fig = go.Figure()
 
     # Eje 1: pedidos
