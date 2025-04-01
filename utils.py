@@ -23,4 +23,4 @@ def show_code(demo):
         # Showing the code of the demo.
         st.markdown("## Code")
         sourcelines, _ = inspect.getsourcelines(demo)
-        st.code(textwrap.dedent("".join(sourcelines[1:])))
+        st.code(textwrap.dedent("".join(sourcelines[1:])))  
