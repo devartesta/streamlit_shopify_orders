@@ -7,11 +7,11 @@ from datetime import date, timedelta
 # Conexión a PostgreSQL
 def get_connection():
     return psycopg2.connect(
-        host=st.secrets["DBHOST"],
-        database=st.secrets["DBNAME"],
-        user=st.secrets["DBUSER"],
-        password=st.secrets["DBPASSWORD"],
-        port=st.secrets["DBPORT"]
+        host=st.secrets["DB_HOST"],
+        database=st.secrets["DB_NAME"],
+        user=st.secrets["DB_USER"],
+        password=st.secrets["DB_PASSWORD"],
+        port=st.secrets["DB_PORT"]
     )
 
 # Obtener lista de países disponibles
