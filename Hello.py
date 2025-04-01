@@ -69,13 +69,16 @@ if df.empty:
     st.warning("⚠️ No hay datos para el rango seleccionado.")
 else:
     # Preparar datos
-    df["fecha"] = pd.to_datetime(df["fecha"])
+    df["fecha"] = pd.to_datetime(df["fecha"]).dt.date  # Asegurar que las fechas sean solo fechas (sin hora)
     df["pedidos"] = pd.to_numeric(df["pedidos"], errors="coerce").fillna(0)
     df["ventas"] = pd.to_numeric(df["ventas"], errors="coerce").fillna(0)
 
     # Si es "Todos" los países, agrupamos
     if country == "Todos":
         df = df.groupby("fecha").agg({"pedidos": "sum", "ventas": "sum"}).reset_index()
+
+    # Depuración: Mostrar el DataFrame antes de graficar
+    st.write("Datos antes de graficar:", df)
 
     # Crear gráfico
     fig = go.Figure()
@@ -107,7 +110,8 @@ else:
         title=f"Evolución {vista.lower()} de pedidos y ventas - {country}",
         xaxis=dict(
             title="Fecha",
-            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m"
+            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m",
+            type="date"  # Forzar que el eje X sea tratado como fechas
         ),
         yaxis=dict(
             title="Pedidos",
