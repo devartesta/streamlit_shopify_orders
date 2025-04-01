@@ -115,35 +115,102 @@ else:
 
     # KPIs antes de la tabla
     st.markdown("### 📊 Resumen Estadístico")
+st.markdown("### 📊 Resumen Estadístico")
     col1, col2, col3, col4 = st.columns(4)
+
     with col1:
-        st.metric(
-            label="Total Pedidos",
-            value=f"{int(df['pedidos'].sum()):,}",
-            delta=f"{int(df['pedidos'].mean()):,} (promedio diario)",
-            delta_color="normal"
+        st.markdown("**Total Pedidos**")
+        st.markdown(f"<h2 style='color: #1f77b4;'>{int(df['pedidos'].sum()):,}</h2>", unsafe_allow_html=True)
+        # Minigráfico para pedidos
+        fig_pedidos = go.Figure()
+        fig_pedidos.add_trace(go.Scatter(
+            x=df["fecha"],
+            y=df["pedidos"],
+            mode="lines",
+            line=dict(color="#1f77b4", width=2),
+            fill="tozeroy",
+            fillcolor="rgba(31, 119, 180, 0.2)"
+        ))
+        fig_pedidos.update_layout(
+            height=100,
+            margin=dict(l=0, r=0, t=0, b=0),
+            showlegend=False,
+            xaxis=dict(show=False, showgrid=False, zeroline=False),
+            yaxis=dict(visible=False, showgrid=False, zeroline=False),
+            template="plotly_dark"
         )
+        st.plotly_chart(fig_pedidos, use_container_width=True)
+
     with col2:
-        st.metric(
-            label="Total Ventas",
-            value=f"€{df['ventas'].sum():,.2f}",
-            delta=f"€{df['ventas'].mean():,.2f} (promedio diario)",
-            delta_color="normal"
+        st.markdown("**Total Ventas**")
+        st.markdown(f"<h2 style='color: #ff7f0e;'>€{df['ventas'].sum():,.2f}</h2>", unsafe_allow_html=True)
+        # Minigráfico para ventas
+        fig_ventas = go.Figure()
+        fig_ventas.add_trace(go.Scatter(
+            x=df["fecha"],
+            y=df["ventas"],
+            mode="lines",
+            line=dict(color="#ff7f0e", width=2),
+            fill="tozeroy",
+            fillcolor="rgba(255, 127, 14, 0.2)"
+        ))
+        fig_ventas.update_layout(
+            height=100,
+            margin=dict(l=0, r=0, t=0, b=0),
+            showlegend=False,
+            xaxis=dict(visible=False, showgrid=False, zeroline=False),
+            yaxis=dict(visible=False, showgrid=False, zeroline=False),
+            template="plotly_dark"
         )
+        st.plotly_chart(fig_ventas, use_container_width=True)
+
     with col3:
-        st.metric(
-            label="Día con Más Pedidos",
-            value=f"{int(df['pedidos'].max()):,}",
-            delta=f"{df['fecha'][df['pedidos'].idxmax()].strftime('%Y-%m-%d')}",
-            delta_color="off"
+        st.markdown("**Promedio Diario de Pedidos**")
+        st.markdown(f"<h2 style='color: #2ca02c;'>{promedio_diario_pedidos:,.1f}</h2>", unsafe_allow_html=True)
+        # Minigráfico para promedio diario de pedidos
+        fig_promedio_pedidos = go.Figure()
+        fig_promedio_pedidos.add_trace(go.Scatter(
+            x=df["fecha"],
+            y=df["promedio_pedidos_diario"],
+            mode="lines",
+            line=dict(color="#2ca02c", width=2),
+            fill="tozeroy",
+            fillcolor="rgba(44, 160, 44, 0.2)"
+        ))
+        fig_promedio_pedidos.update_layout(
+            height=100,
+            margin=dict(l=0, r=0, t=0, b=0),
+            showlegend=False,
+            xaxis=dict(visible=False, showgrid=False, zeroline=False),
+            yaxis=dict(visible=False, showgrid=False, zeroline=False),
+            template="plotly_dark"
         )
+        st.plotly_chart(fig_promedio_pedidos, use_container_width=True)
+
     with col4:
-        st.metric(
-            label="Día con Más Ventas",
-            value=f"€{df['ventas'].max():,.2f}",
-            delta=f"{df['fecha'][df['ventas'].idxmax()].strftime('%Y-%m-%d')}",
-            delta_color="off"
+        st.markdown("**Promedio Diario de Ventas**")
+        st.markdown(f"<h2 style='color: #d62728;'>€{promedio_diario_ventas:,.2f}</h2>", unsafe_allow_html=True)
+        # Minigráfico para promedio diario de ventas
+        # Para calcular el promedio diario de ventas por período, necesitamos dividir las ventas por el número de días en cada período
+        df["promedio_ventas_diario"] = df.apply(lambda row: row["ventas"] / 1 if vista == "Diaria" else row["ventas"] / 7 if vista == "Semanal" else row["ventas"] / monthrange(pd.Timestamp(row["fecha"]).year, pd.Timestamp(row["fecha"]).month)[1], axis=1)
+        fig_promedio_ventas = go.Figure()
+        fig_promedio_ventas.add_trace(go.Scatter(
+            x=df["fecha"],
+            y=df["promedio_ventas_diario"],
+            mode="lines",
+            line=dict(color="#d62728", width=2),
+            fill="tozeroy",
+            fillcolor="rgba(214, 39, 40, 0.2)"
+        ))
+        fig_promedio_ventas.update_layout(
+            height=100,
+            margin=dict(l=0, r=0, t=0, b=0),
+            showlegend=False,
+            xaxis=dict(visible=False, showgrid=False, zeroline=False),
+            yaxis=dict(visible=False, showgrid=False, zeroline=False),
+            template="plotly_dark"
         )
+        st.plotly_chart(fig_promedio_ventas, use_container_width=True)
 
 #    # Formatear datos para la tabla
 #    df_display = df.copy()
