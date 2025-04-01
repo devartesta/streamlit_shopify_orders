@@ -21,7 +21,7 @@ def fetch_summary():
         WITH base AS (
             SELECT 
                 order_id,
-                fecha_creacion::date AS fecha,
+                fulfillment_created_at::date AS fecha,
                 total,
                 quantity,
                 tiene_devolucion
