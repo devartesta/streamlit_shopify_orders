@@ -52,9 +52,10 @@ def fetch_evolution(start_date, end_date, country, vista):
 
 # 🖥️ Interfaz
 st.title("📦 Análisis de Pedidos y Ventas")
+st.markdown("Explora los datos de pedidos y ventas con filtros personalizados.")
 
 # Filtros en columnas para mejor presentación
-col1, col2, col3 = st.columns([2, 2, 1])
+col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
 
 with col1:
     default_start = date.today() - timedelta(days=30)
@@ -67,8 +68,8 @@ with col2:
 with col3:
     country = st.selectbox("🌍 País", get_country_list(), key="country")
 
-# Filtro de vista (diaria o mensual)
-vista = st.radio("📊 Vista", ["Diaria", "Mensual"], horizontal=True, key="vista")
+with col4:
+    vista = st.selectbox("📊 Vista", ["Diaria", "Mensual"], key="vista")
 
 # Cargar datos
 try:
@@ -113,12 +114,15 @@ else:
             {
                 "selector": "th",
                 "props": [
-                    ("background-color", "#1f77b4"),
+                    ("background-color", "#2c3e50"),  # Fondo oscuro elegante
                     ("color", "white"),
                     ("font-weight", "bold"),
                     ("text-align", "center"),
-                    ("border", "1px solid #ddd"),
-                    ("padding", "8px")
+                    ("border", "1px solid #34495e"),
+                    ("padding", "12px"),
+                    ("font-family", "Roboto, sans-serif"),
+                    ("font-size", "16px"),
+                    ("box-shadow", "0 2px 4px rgba(0,0,0,0.1)")
                 ]
             },
             # Estilo para las filas
@@ -126,39 +130,86 @@ else:
                 "selector": "td",
                 "props": [
                     ("text-align", "center"),
-                    ("border", "1px solid #ddd"),
-                    ("padding", "8px")
+                    ("border", "1px solid #ecf0f1"),
+                    ("padding", "10px"),
+                    ("font-family", "Roboto, sans-serif"),
+                    ("font-size", "14px"),
+                    ("color", "#2c3e50")
                 ]
             },
             # Estilo para filas alternas
             {
                 "selector": "tr:nth-child(even)",
                 "props": [
-                    ("background-color", "#f2f2f2")
+                    ("background-color", "#f5f7fa")  # Fondo gris claro
                 ]
             },
             # Estilo para filas al pasar el mouse
             {
                 "selector": "tr:hover",
                 "props": [
-                    ("background-color", "#e6f3ff")
+                    ("background-color", "#dfe6e9"),  # Resaltado al pasar el mouse
+                    ("transition", "background-color 0.3s ease")
+                ]
+            },
+            # Estilo para la tabla completa
+            {
+                "selector": "",
+                "props": [
+                    ("border-collapse", "collapse"),
+                    ("box-shadow", "0 4px 8px rgba(0,0,0,0.1)"),
+                    ("border-radius", "8px"),
+                    ("overflow", "hidden")
                 ]
             }
-        ]).set_properties(**{
-            "font-family": "Arial, sans-serif",
-            "font-size": "14px"
+        ]).set_caption(f"Datos de pedidos y ventas - {country} ({vista})").set_properties(**{
+            "background-color": "white",
+            "border": "1px solid #ecf0f1"
         }).hide(axis="index")  # Ocultar el índice
 
     # Mostrar tabla
-    st.subheader(f"Datos de pedidos y ventas - {country} ({vista})")
-    st.write(style_dataframe(df_display))
+    st.markdown("### 📋 Tabla de Datos")
+    st.write(style_dataframe(df_display), unsafe_allow_html=True)
 
-    # Resumen estadístico
-    st.subheader("📊 Resumen")
-    col1, col2, col3 = st.columns(3)
+    # Resumen estadístico con tarjetas más elaboradas
+    st.markdown("### 📊 Resumen Estadístico")
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("Total Pedidos", df["pedidos"].sum())
+        st.metric(
+            label="Total Pedidos",
+            value=f"{int(df['pedidos'].sum()):,}",
+            delta=f"{int(df['pedidos'].mean()):,} (promedio diario)",
+            delta_color="normal"
+        )
     with col2:
-        st.metric("Total Ventas", f"€{df['ventas'].sum():,.2f}")
+        st.metric(
+            label="Total Ventas",
+            value=f"€{df['ventas'].sum():,.2f}",
+            delta=f"€{df['ventas'].mean():,.2f} (promedio diario)",
+            delta_color="normal"
+        )
     with col3:
-        st.metric("Promedio Diario", f"€{df['ventas'].mean():,.2f}")
+        st.metric(
+            label="Día con Más Pedidos",
+            value=f"{int(df['pedidos'].max()):,}",
+            delta=f"{df['fecha'][df['pedidos'].idxmax()].strftime('%Y-%m-%d')}",
+            delta_color="off"
+        )
+    with col4:
+        st.metric(
+            label="Día con Más Ventas",
+            value=f"€{df['ventas'].max():,.2f}",
+            delta=f"{df['fecha'][df['ventas'].idxmax()].strftime('%Y-%m-%d')}",
+            delta_color="off"
+        )
+
+    # Opción para descargar los datos
+    st.markdown("### 💾 Descargar Datos")
+    csv = df_display.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Descargar como CSV",
+        data=csv,
+        file_name=f"pedidos_ventas_{country}_{vista.lower()}_{start_date}_a_{end_date}.csv",
+        mime="text/csv",
+        help="Descarga los datos en formato CSV"
+    )
