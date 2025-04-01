@@ -14,7 +14,7 @@ def get_connection():
         port=st.secrets["DBPORT"]
     )
 
-# 🌍 Obtener lista de países únicos
+# 🌍 Lista de países
 @st.cache_data
 def get_country_list():
     with get_connection() as conn:
@@ -24,7 +24,7 @@ def get_country_list():
         )
     return ["Todos"] + sorted(df["shipping_country"].dropna().tolist())
 
-# 📈 Consulta dinámica según vista seleccionada
+# 📊 Consulta con vista diaria o mensual
 def fetch_evolution(start_date, end_date, country, vista):
     with get_connection() as conn:
         date_trunc = "day" if vista == "Diaria" else "month"
@@ -54,10 +54,10 @@ def fetch_evolution(start_date, end_date, country, vista):
             params.append(country)
         return pd.read_sql(query, conn, params=params)
 
-# 🖥️ Interfaz Streamlit
+# 🖥️ Interfaz
 st.title("📦 Evolución de pedidos y ventas")
 
-# Filtros de usuario
+# Filtros
 default_start = date.today() - timedelta(days=30)
 default_end = date.today()
 
@@ -66,28 +66,32 @@ end_date = st.date_input("📅 Hasta", default_end)
 country = st.selectbox("🌍 País", get_country_list())
 vista = st.radio("📊 Vista", ["Diaria", "Mensual"], horizontal=True)
 
-# Cargar y procesar datos
+# Cargar datos
 try:
     df = fetch_evolution(start_date, end_date, country, vista)
 except Exception as e:
     st.error(f"❌ Error al consultar la base de datos: {e}")
     st.stop()
 
-# Mostrar gráfico y tabla
+# Mostrar gráfico + tabla
 if df.empty:
     st.warning("⚠️ No hay datos para el rango seleccionado.")
 else:
     fig = go.Figure()
 
+    # Eje 1: pedidos
     fig.add_trace(go.Scatter(
-        x=df["fecha"], y=df["pedidos"],
+        x=df["fecha"],
+        y=df["pedidos"],
         mode="lines+markers",
         name="Pedidos",
         yaxis="y1"
     ))
 
+    # Eje 2: ventas
     fig.add_trace(go.Scatter(
-        x=df["fecha"], y=df["ventas"],
+        x=df["fecha"],
+        y=df["ventas"],
         mode="lines+markers",
         name="Ventas (€)",
         yaxis="y2"
@@ -95,14 +99,16 @@ else:
 
     fig.update_layout(
         title=f"Evolución {vista.lower()} de pedidos y ventas - {country}",
-        xaxis_title="Fecha",
+        xaxis=dict(title="Fecha"),
         yaxis=dict(title="Pedidos", side="left"),
         yaxis2=dict(title="Ventas (€)", overlaying="y", side="right"),
         legend=dict(x=0.01, y=0.99),
         margin=dict(l=40, r=40, t=60, b=40),
+        hovermode="x unified"
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
+    # Vista previa
     st.subheader("📄 Vista previa de los datos")
     st.dataframe(df)
