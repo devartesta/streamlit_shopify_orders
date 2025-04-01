@@ -91,192 +91,194 @@ else:
     else:
         df = df[["fecha", "shipping_country", "pedidos", "ventas"]]
 
-    # Calcular promedio de pedidos diario
-    df["promedio_pedidos_diario"] = df["pedidos"] / (end_date - start_date).days if (end_date - start_date).days > 0 else df["pedidos"]
+    st.dataframe(df)
 
-    # KPIs antes de la tabla
-    st.markdown("### 📊 Resumen Estadístico")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric(
-            label="Total Pedidos",
-            value=f"{int(df['pedidos'].sum()):,}",
-            delta=f"{int(df['pedidos'].mean()):,} (promedio diario)",
-            delta_color="normal"
-        )
-    with col2:
-        st.metric(
-            label="Total Ventas",
-            value=f"€{df['ventas'].sum():,.2f}",
-            delta=f"€{df['ventas'].mean():,.2f} (promedio diario)",
-            delta_color="normal"
-        )
-    with col3:
-        st.metric(
-            label="Día con Más Pedidos",
-            value=f"{int(df['pedidos'].max()):,}",
-            delta=f"{df['fecha'][df['pedidos'].idxmax()].strftime('%Y-%m-%d')}",
-            delta_color="off"
-        )
-    with col4:
-        st.metric(
-            label="Día con Más Ventas",
-            value=f"€{df['ventas'].max():,.2f}",
-            delta=f"{df['fecha'][df['ventas'].idxmax()].strftime('%Y-%m-%d')}",
-            delta_color="off"
-        )
-
-    # Formatear datos para la tabla
-    df_display = df.copy()
-    df_display["fecha"] = df_display["fecha"].apply(lambda x: x.strftime("%Y-%m-%d"))
-    df_display["pedidos"] = df_display["pedidos"].astype(int)
-    df_display["ventas"] = df_display["ventas"].apply(lambda x: f"€{x:,.2f}")
-    df_display["promedio_pedidos_diario"] = df_display["promedio_pedidos_diario"].apply(lambda x: f"{x:,.2f}")
-
-    # Renombrar columnas para la tabla
-    df_display = df_display.rename(columns={
-        "fecha": "Fecha",
-        "shipping_country": "País",
-        "pedidos": "Pedidos",
-        "ventas": "Ventas",
-        "promedio_pedidos_diario": "Promedio Pedidos Diario"
-    })
-
-    # Estilo personalizado para la tabla (inspirado en la captura)
-    def style_dataframe(df):
-        return df.style.set_table_styles([
-            # Estilo para el encabezado
-            {
-                "selector": "th",
-                "props": [
-                    ("background-color", "#1a2526"),  # Fondo oscuro como en la captura
-                    ("color", "white"),
-                    ("font-weight", "bold"),
-                    ("text-align", "center"),
-                    ("border", "1px solid #34495e"),
-                    ("padding", "12px"),
-                    ("font-family", "Arial, sans-serif"),
-                    ("font-size", "14px"),
-                    ("text-transform", "uppercase")
-                ]
-            },
-            # Estilo para las filas
-            {
-                "selector": "td",
-                "props": [
-                    ("text-align", "center"),
-                    ("border", "1px solid #34495e"),
-                    ("padding", "10px"),
-                    ("font-family", "Arial, sans-serif"),
-                    ("font-size", "14px"),
-                    ("color", "white"),
-                    ("background-color", "#2a3b3c")  # Fondo oscuro para las celdas
-                ]
-            },
-            # Estilo para filas al pasar el mouse
-            {
-                "selector": "tr:hover",
-                "props": [
-                    ("background-color", "#3e5c5e"),  # Resaltado al pasar el mouse
-                    ("transition", "background-color 0.3s ease")
-                ]
-            },
-            # Estilo para la tabla completa
-            {
-                "selector": "",
-                "props": [
-                    ("border-collapse", "collapse"),
-                    ("width", "100%"),  # Ocupar todo el ancho
-                    ("background-color", "#2a3b3c")
-                ]
-            }
-        ]).set_caption(f"Datos de pedidos y ventas - {country} ({vista})").set_properties(**{
-            "border": "1px solid #34495e"
-        }).hide(axis="index")  # Ocultar el índice
-
-    # Mostrar tabla
-    st.markdown("### 📋 Tabla de Datos")
-    st.write(style_dataframe(df_display), unsafe_allow_html=True)
-
-    # Gráficos debajo de la tabla
-    st.markdown("### 📈 Análisis Visual")
-
-    # Gráfico 1: Evolución de pedidos
-    st.markdown("#### Evolución de Pedidos")
-    fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(
-        x=df["fecha"],
-        y=df["pedidos"],
-        mode="lines+markers",
-        name="Pedidos",
-        line=dict(color="#1f77b4"),
-        marker=dict(size=8)
-    ))
-    fig1.update_layout(
-        xaxis=dict(
-            title="Fecha",
-            type="date",
-            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m-%d" if vista == "Semanal" else "%Y-%m"
-        ),
-        yaxis=dict(title="Pedidos"),
-        template="plotly_dark",
-        margin=dict(l=50, r=50, t=30, b=30)
-    )
-    st.plotly_chart(fig1, use_container_width=True)
-
-    # Gráfico 2: Evolución de ventas
-    st.markdown("#### Evolución de Ventas")
-    fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(
-        x=df["fecha"],
-        y=df["ventas"],
-        mode="lines+markers",
-        name="Ventas (€)",
-        line=dict(color="#ff7f0e"),
-        marker=dict(size=8)
-    ))
-    fig2.update_layout(
-        xaxis=dict(
-            title="Fecha",
-            type="date",
-            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m-%d" if vista == "Semanal" else "%Y-%m"
-        ),
-        yaxis=dict(title="Ventas (€)"),
-        template="plotly_dark",
-        margin=dict(l=50, r=50, t=30, b=30)
-    )
-    st.plotly_chart(fig2, use_container_width=True)
-
-    # Gráfico 3: Evolución del promedio de pedidos diario
-    st.markdown("#### Evolución del Promedio de Pedidos Diario")
-    fig3 = go.Figure()
-    fig3.add_trace(go.Scatter(
-        x=df["fecha"],
-        y=df["promedio_pedidos_diario"],
-        mode="lines+markers",
-        name="Promedio Pedidos Diario",
-        line=dict(color="#2ca02c"),
-        marker=dict(size=8)
-    ))
-    fig3.update_layout(
-        xaxis=dict(
-            title="Fecha",
-            type="date",
-            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m-%d" if vista == "Semanal" else "%Y-%m"
-        ),
-        yaxis=dict(title="Promedio Pedidos Diario"),
-        template="plotly_dark",
-        margin=dict(l=50, r=50, t=30, b=30)
-    )
-    st.plotly_chart(fig3, use_container_width=True)
-
-    # Opción para descargar los datos
-    st.markdown("### 💾 Descargar Datos")
-    csv = df_display.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="Descargar como CSV",
-        data=csv,
-        file_name=f"pedidos_ventas_{country}_{vista.lower()}_{start_date}_a_{end_date}.csv",
-        mime="text/csv",
-        help="Descarga los datos en formato CSV"
-    )
+#    # Calcular promedio de pedidos diario
+#    df["promedio_pedidos_diario"] = df["pedidos"] / (end_date - start_date).days if (end_date - start_date).days > 0 else df["pedidos"]
+#
+#    # KPIs antes de la tabla
+#    st.markdown("### 📊 Resumen Estadístico")
+#    col1, col2, col3, col4 = st.columns(4)
+#    with col1:
+#        st.metric(
+#            label="Total Pedidos",
+#            value=f"{int(df['pedidos'].sum()):,}",
+#            delta=f"{int(df['pedidos'].mean()):,} (promedio diario)",
+#            delta_color="normal"
+#        )
+#    with col2:
+#        st.metric(
+#            label="Total Ventas",
+#            value=f"€{df['ventas'].sum():,.2f}",
+#            delta=f"€{df['ventas'].mean():,.2f} (promedio diario)",
+#            delta_color="normal"
+#        )
+#    with col3:
+#        st.metric(
+#            label="Día con Más Pedidos",
+#            value=f"{int(df['pedidos'].max()):,}",
+#            delta=f"{df['fecha'][df['pedidos'].idxmax()].strftime('%Y-%m-%d')}",
+#            delta_color="off"
+#        )
+#    with col4:
+#        st.metric(
+#            label="Día con Más Ventas",
+#            value=f"€{df['ventas'].max():,.2f}",
+#            delta=f"{df['fecha'][df['ventas'].idxmax()].strftime('%Y-%m-%d')}",
+#            delta_color="off"
+#        )
+#
+#    # Formatear datos para la tabla
+#    df_display = df.copy()
+#    df_display["fecha"] = df_display["fecha"].apply(lambda x: x.strftime("%Y-%m-%d"))
+#    df_display["pedidos"] = df_display["pedidos"].astype(int)
+#    df_display["ventas"] = df_display["ventas"].apply(lambda x: f"€{x:,.2f}")
+#    df_display["promedio_pedidos_diario"] = df_display["promedio_pedidos_diario"].apply(lambda x: f"{x:,.2f}")
+#
+#    # Renombrar columnas para la tabla
+#    df_display = df_display.rename(columns={
+#        "fecha": "Fecha",
+#        "shipping_country": "País",
+#        "pedidos": "Pedidos",
+#        "ventas": "Ventas",
+#        "promedio_pedidos_diario": "Promedio Pedidos Diario"
+#    })
+#
+#    # Estilo personalizado para la tabla (inspirado en la captura)
+#    def style_dataframe(df):
+#        return df.style.set_table_styles([
+#            # Estilo para el encabezado
+#            {
+#                "selector": "th",
+#                "props": [
+#                    ("background-color", "#1a2526"),  # Fondo oscuro como en la captura
+#                    ("color", "white"),
+#                    ("font-weight", "bold"),
+#                    ("text-align", "center"),
+#                    ("border", "1px solid #34495e"),
+#                    ("padding", "12px"),
+#                    ("font-family", "Arial, sans-serif"),
+#                    ("font-size", "14px"),
+#                    ("text-transform", "uppercase")
+#                ]
+#            },
+#            # Estilo para las filas
+#            {
+#                "selector": "td",
+#                "props": [
+#                    ("text-align", "center"),
+#                    ("border", "1px solid #34495e"),
+#                    ("padding", "10px"),
+#                    ("font-family", "Arial, sans-serif"),
+#                    ("font-size", "14px"),
+#                    ("color", "white"),
+#                    ("background-color", "#2a3b3c")  # Fondo oscuro para las celdas
+#                ]
+#            },
+#            # Estilo para filas al pasar el mouse
+#            {
+#                "selector": "tr:hover",
+#                "props": [
+#                    ("background-color", "#3e5c5e"),  # Resaltado al pasar el mouse
+#                    ("transition", "background-color 0.3s ease")
+#                ]
+#            },
+#            # Estilo para la tabla completa
+#            {
+#                "selector": "",
+#                "props": [
+#                    ("border-collapse", "collapse"),
+#                    ("width", "100%"),  # Ocupar todo el ancho
+#                    ("background-color", "#2a3b3c")
+#                ]
+#            }
+#        ]).set_caption(f"Datos de pedidos y ventas - {country} ({vista})").set_properties(**{
+#            "border": "1px solid #34495e"
+#        }).hide(axis="index")  # Ocultar el índice
+#
+#    # Mostrar tabla
+#    st.markdown("### 📋 Tabla de Datos")
+#    st.write(style_dataframe(df_display), unsafe_allow_html=True)
+#
+#    # Gráficos debajo de la tabla
+#    st.markdown("### 📈 Análisis Visual")
+#
+#    # Gráfico 1: Evolución de pedidos
+#    st.markdown("#### Evolución de Pedidos")
+#    fig1 = go.Figure()
+#    fig1.add_trace(go.Scatter(
+#        x=df["fecha"],
+#        y=df["pedidos"],
+#        mode="lines+markers",
+#        name="Pedidos",
+#        line=dict(color="#1f77b4"),
+#        marker=dict(size=8)
+#    ))
+#    fig1.update_layout(
+#        xaxis=dict(
+#            title="Fecha",
+#            type="date",
+#            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m-%d" if vista == "Semanal" else "%Y-%m"
+#        ),
+#        yaxis=dict(title="Pedidos"),
+#        template="plotly_dark",
+#        margin=dict(l=50, r=50, t=30, b=30)
+#    )
+#    st.plotly_chart(fig1, use_container_width=True)
+#
+#    # Gráfico 2: Evolución de ventas
+#    st.markdown("#### Evolución de Ventas")
+#    fig2 = go.Figure()
+#    fig2.add_trace(go.Scatter(
+#        x=df["fecha"],
+#        y=df["ventas"],
+#        mode="lines+markers",
+#        name="Ventas (€)",
+#        line=dict(color="#ff7f0e"),
+#        marker=dict(size=8)
+#    ))
+#    fig2.update_layout(
+#        xaxis=dict(
+#            title="Fecha",
+#            type="date",
+#            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m-%d" if vista == "Semanal" else "%Y-%m"
+#        ),
+#        yaxis=dict(title="Ventas (€)"),
+#        template="plotly_dark",
+#        margin=dict(l=50, r=50, t=30, b=30)
+#    )
+#    st.plotly_chart(fig2, use_container_width=True)
+#
+#    # Gráfico 3: Evolución del promedio de pedidos diario
+#    st.markdown("#### Evolución del Promedio de Pedidos Diario")
+#    fig3 = go.Figure()
+#    fig3.add_trace(go.Scatter(
+#        x=df["fecha"],
+#        y=df["promedio_pedidos_diario"],
+#        mode="lines+markers",
+#        name="Promedio Pedidos Diario",
+#        line=dict(color="#2ca02c"),
+#        marker=dict(size=8)
+#    ))
+#    fig3.update_layout(
+#        xaxis=dict(
+#            title="Fecha",
+#            type="date",
+#            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m-%d" if vista == "Semanal" else "%Y-%m"
+#        ),
+#        yaxis=dict(title="Promedio Pedidos Diario"),
+#        template="plotly_dark",
+#        margin=dict(l=50, r=50, t=30, b=30)
+#    )
+#    st.plotly_chart(fig3, use_container_width=True)
+#
+#    # Opción para descargar los datos
+#    st.markdown("### 💾 Descargar Datos")
+#    csv = df_display.to_csv(index=False).encode('utf-8')
+#    st.download_button(
+#        label="Descargar como CSV",
+#        data=csv,
+#        file_name=f"pedidos_ventas_{country}_{vista.lower()}_{start_date}_a_{end_date}.csv",
+#        mime="text/csv",
+#        help="Descarga los datos en formato CSV"
+#    )
