@@ -112,39 +112,39 @@ else:
 
     df["promedio_pedidos_diario"] = df.apply(lambda row: calculate_daily_average(row, vista), axis=1)
     st.dataframe(df)
-#
-#    # KPIs antes de la tabla
-#    st.markdown("### 📊 Resumen Estadístico")
-#    col1, col2, col3, col4 = st.columns(4)
-#    with col1:
-#        st.metric(
-#            label="Total Pedidos",
-#            value=f"{int(df['pedidos'].sum()):,}",
-#            delta=f"{int(df['pedidos'].mean()):,} (promedio diario)",
-#            delta_color="normal"
-#        )
-#    with col2:
-#        st.metric(
-#            label="Total Ventas",
-#            value=f"€{df['ventas'].sum():,.2f}",
-#            delta=f"€{df['ventas'].mean():,.2f} (promedio diario)",
-#            delta_color="normal"
-#        )
-#    with col3:
-#        st.metric(
-#            label="Día con Más Pedidos",
-#            value=f"{int(df['pedidos'].max()):,}",
-#            delta=f"{df['fecha'][df['pedidos'].idxmax()].strftime('%Y-%m-%d')}",
-#            delta_color="off"
-#        )
-#    with col4:
-#        st.metric(
-#            label="Día con Más Ventas",
-#            value=f"€{df['ventas'].max():,.2f}",
-#            delta=f"{df['fecha'][df['ventas'].idxmax()].strftime('%Y-%m-%d')}",
-#            delta_color="off"
-#        )
-#
+
+    # KPIs antes de la tabla
+    st.markdown("### 📊 Resumen Estadístico")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric(
+            label="Total Pedidos",
+            value=f"{int(df['pedidos'].sum()):,}",
+            delta=f"{int(df['pedidos'].mean()):,} (promedio diario)",
+            delta_color="normal"
+        )
+    with col2:
+        st.metric(
+            label="Total Ventas",
+            value=f"€{df['ventas'].sum():,.2f}",
+            delta=f"€{df['ventas'].mean():,.2f} (promedio diario)",
+            delta_color="normal"
+        )
+    with col3:
+        st.metric(
+            label="Día con Más Pedidos",
+            value=f"{int(df['pedidos'].max()):,}",
+            delta=f"{df['fecha'][df['pedidos'].idxmax()].strftime('%Y-%m-%d')}",
+            delta_color="off"
+        )
+    with col4:
+        st.metric(
+            label="Día con Más Ventas",
+            value=f"€{df['ventas'].max():,.2f}",
+            delta=f"{df['fecha'][df['ventas'].idxmax()].strftime('%Y-%m-%d')}",
+            delta_color="off"
+        )
+
 #    # Formatear datos para la tabla
 #    df_display = df.copy()
 #    df_display["fecha"] = df_display["fecha"].apply(lambda x: x.strftime("%Y-%m-%d"))
