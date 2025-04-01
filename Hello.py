@@ -92,7 +92,21 @@ else:
         df = df[["fecha", "shipping_country", "pedidos", "ventas"]]
 
     # Calcular promedio de pedidos diario
-    df["promedio_pedidos_diario"] = df["pedidos"] / (end_date - start_date).days if (end_date - start_date).days > 0 else df["pedidos"]
+    def calculate_daily_average(row, vista):
+            if vista == "Diaria":
+                # Para vista diaria, el promedio es el mismo número de pedidos (1 día)
+                return row["pedidos"]
+            elif vista == "Semanal":
+                # Para vista semanal, dividimos entre 7 días
+                return row["pedidos"] / 7
+            else:
+                # Para vista mensual, dividimos entre el número de días del mes
+                year = row["fecha"].year
+                month = row["fecha"].month
+                days_in_month = monthrange(year, month)[1]
+                return row["pedidos"] / days_in_month
+
+    df["promedio_pedidos_diario"] = df.apply(lambda row: calculate_daily_average(row, vista), axis=1)
     st.dataframe(df)
 #
 #    # KPIs antes de la tabla
