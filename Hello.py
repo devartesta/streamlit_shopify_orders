@@ -18,32 +18,35 @@ def get_connection():
 @st.cache_data
 def get_country_list():
     with get_connection() as conn:
-        df = pd.read_sql(
-            "SELECT DISTINCT shipping_country FROM shopify.raw_orders WHERE shipping_country IS NOT NULL",
-            conn
-        )
+        query = """
+        SELECT DISTINCT shipping_country 
+        FROM shopify.raw_orders 
+        WHERE shipping_country IS NOT NULL
+        """
+        df = pd.read_sql(query, conn)
     return ["Todos"] + sorted(df["shipping_country"].dropna().tolist())
 
-# 📊 Consulta con vista diaria o mensual
+# 📊 Consulta de datos
 def fetch_evolution(start_date, end_date, country, vista):
     with get_connection() as conn:
         date_trunc = "day" if vista == "Diaria" else "month"
         query = f"""
-        SELECT
-            DATE_TRUNC('{date_trunc}', fulfillment_created_at)::date AS fecha,
+        SELECT 
+            DATE_TRUNC('{date_trunc}', fulfillment_created_at) AS fecha,
             shipping_country,
             COUNT(DISTINCT order_id) AS pedidos,
             SUM(total) AS ventas
         FROM shopify.raw_orders
         WHERE fulfillment_created_at BETWEEN %s AND %s
-        {f"AND shipping_country = %s" if country != 'Todos' else ""}
+        {f"AND shipping_country = %s" if country != "Todos" else ""}
         GROUP BY DATE_TRUNC('{date_trunc}', fulfillment_created_at), shipping_country
-        ORDER BY fecha;
+        ORDER BY fecha
         """
         params = [start_date, end_date]
-        if country != 'Todos':
+        if country != "Todos":
             params.append(country)
-        return pd.read_sql(query, conn, params=params)
+        df = pd.read_sql(query, conn, params=params)
+    return df
 
 # 🖥️ Interfaz
 st.title("📦 Evolución de pedidos y ventas")
@@ -64,78 +67,81 @@ except Exception as e:
     st.error(f"❌ Error al consultar la base de datos: {e}")
     st.stop()
 
-# Mostrar gráfico + tabla
+# Procesar datos
 if df.empty:
     st.warning("⚠️ No hay datos para el rango seleccionado.")
 else:
-    # Preparar datos
-    df["fecha"] = pd.to_datetime(df["fecha"]).dt.date  # Asegurar que las fechas sean solo fechas (sin hora)
+    # Convertir fechas y valores numéricos
+    df["fecha"] = pd.to_datetime(df["fecha"]).dt.date
     df["pedidos"] = pd.to_numeric(df["pedidos"], errors="coerce").fillna(0)
     df["ventas"] = pd.to_numeric(df["ventas"], errors="coerce").fillna(0)
 
-    # Si es "Todos" los países, agrupamos
+    # Agrupar si es "Todos" los países
     if country == "Todos":
         df = df.groupby("fecha").agg({"pedidos": "sum", "ventas": "sum"}).reset_index()
+    else:
+        df = df[["fecha", "shipping_country", "pedidos", "ventas"]]
 
-    # Depuración: Mostrar el DataFrame antes de graficar
-    st.write("Datos antes de graficar:", df)
+    # Depuración: Mostrar datos antes de graficar
+    st.subheader("Datos antes de graficar:")
+    st.dataframe(df)
 
     # Crear gráfico
     fig = go.Figure()
 
-    # Línea de pedidos (eje izquierdo)
+    # Añadir línea de pedidos (eje izquierdo)
     fig.add_trace(go.Scatter(
         x=df["fecha"],
         y=df["pedidos"],
-        mode="lines+markers",
         name="Pedidos",
-        line=dict(color="#1f77b4"),
-        marker=dict(size=8),
-        yaxis="y1"
+        mode="lines+markers",
+        line=dict(color="blue"),
+        marker=dict(size=8)
     ))
 
-    # Línea de ventas (eje derecho)
+    # Añadir línea de ventas (eje derecho)
     fig.add_trace(go.Scatter(
         x=df["fecha"],
         y=df["ventas"],
-        mode="lines+markers",
         name="Ventas (€)",
-        line=dict(color="#ff7f0e"),
+        mode="lines+markers",
+        line=dict(color="orange"),
         marker=dict(size=8),
         yaxis="y2"
     ))
 
-    # Configuración del layout
+    # Configurar el layout del gráfico
     fig.update_layout(
         title=f"Evolución {vista.lower()} de pedidos y ventas - {country}",
         xaxis=dict(
             title="Fecha",
-            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m",
-            type="date"  # Forzar que el eje X sea tratado como fechas
+            type="date",
+            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m"
         ),
         yaxis=dict(
             title="Pedidos",
             side="left",
-            color="#1f77b4",
-            range=[0, df["pedidos"].max() * 1.1]  # Ajustar rango para pedidos
+            color="blue",
+            range=[0, df["pedidos"].max() * 1.2]  # Margen adicional para visibilidad
         ),
         yaxis2=dict(
             title="Ventas (€)",
-            overlaying="y",
             side="right",
-            color="#ff7f0e",
-            range=[0, df["ventas"].max() * 1.1]  # Ajustar rango para ventas
+            overlaying="y",
+            color="orange",
+            range=[0, df["ventas"].max() * 1.2]  # Margen adicional para visibilidad
         ),
         legend=dict(x=0.01, y=0.99),
-        margin=dict(l=50, r=50, t=60, b=40),
         hovermode="x unified",
-        template="plotly_white"
+        template="plotly_white",
+        margin=dict(l=50, r=50, t=60, b=40)
     )
 
+    # Mostrar gráfico
     st.plotly_chart(fig, use_container_width=True)
 
-    # Vista previa de datos
-    st.subheader("📄 Vista previa de los datos")
+    # Mostrar tabla de datos
+    st.subheader("Vista previa de los datos")
     st.dataframe(df.style.format({
         "fecha": "{:%Y-%m-%d}",
         "pedidos": "{:.0f}",
