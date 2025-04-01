@@ -3,6 +3,7 @@ import pandas as pd
 import psycopg2
 import plotly.graph_objects as go
 from datetime import date, timedelta
+from calendar import monthrange
 
 # Configuración de la página
 st.set_page_config(page_title="📦 Análisis de Pedidos y Ventas", layout="wide")
@@ -98,11 +99,14 @@ else:
                 return row["pedidos"]
             elif vista == "Semanal":
                 # Para vista semanal, dividimos entre 7 días
+                # Nota: Esto asume que cada semana tiene 7 días, lo cual puede no ser exacto si la semana está incompleta
                 return row["pedidos"] / 7
             else:
                 # Para vista mensual, dividimos entre el número de días del mes
-                year = row["fecha"].year
-                month = row["fecha"].month
+                # Convertimos el Timestamp a datetime para evitar problemas
+                fecha = pd.Timestamp(row["fecha"]).to_pydatetime()
+                year = fecha.year
+                month = fecha.month
                 days_in_month = monthrange(year, month)[1]
                 return row["pedidos"] / days_in_month
 
