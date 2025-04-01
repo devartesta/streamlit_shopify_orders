@@ -28,21 +28,31 @@ def get_country_list():
 def fetch_evolution(start_date, end_date, country):
     with get_connection() as conn:
         query = f"""
+        WITH pedidos_por_dia AS (
+            SELECT
+                order_id,
+                fulfillment_created_at::date AS fecha,
+                shipping_country,
+                MAX(total) AS total
+            FROM shopify.raw_orders
+            WHERE fulfillment_created_at BETWEEN %s AND %s
+            {f"AND shipping_country = %s" if country != 'Todos' else ""}
+            GROUP BY order_id, fecha, shipping_country
+        )
         SELECT 
-            fulfillment_created_at::date AS fecha,
+            fecha,
             shipping_country,
-            COUNT(DISTINCT order_id) AS pedidos,
-            SUM(DISTINCT total) AS ventas
-        FROM shopify.raw_orders
-        WHERE fulfillment_created_at BETWEEN %s AND %s
-        {f"AND shipping_country = %s" if country != 'Todos' else ""}
-        GROUP BY 1, 2
-        ORDER BY 1;
+            COUNT(order_id) AS pedidos,
+            SUM(total) AS ventas
+        FROM pedidos_por_dia
+        GROUP BY fecha, shipping_country
+        ORDER BY fecha;
         """
         params = [start_date, end_date]
         if country != 'Todos':
             params.append(country)
         return pd.read_sql(query, conn, params=params)
+
 
 # Interfaz Streamlit
 st.title("📦 Evolución de pedidos y ventas")
