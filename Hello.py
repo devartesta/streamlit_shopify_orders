@@ -29,24 +29,15 @@ def fetch_evolution(start_date, end_date, country, vista):
     with get_connection() as conn:
         date_trunc = "day" if vista == "Diaria" else "month"
         query = f"""
-        WITH pedidos_agrupados AS (
-            SELECT
-                order_id,
-                DATE_TRUNC('{date_trunc}', fulfillment_created_at)::date AS fecha,
-                shipping_country,
-                MAX(total) AS total
-            FROM shopify.raw_orders
-            WHERE fulfillment_created_at BETWEEN %s AND %s
-            {f"AND shipping_country = %s" if country != 'Todos' else ""}
-            GROUP BY order_id, fecha, shipping_country
-        )
         SELECT
-            fecha,
+            DATE_TRUNC('{date_trunc}', fulfillment_created_at)::date AS fecha,
             shipping_country,
-            COUNT(order_id) AS pedidos,
+            COUNT(DISTINCT order_id) AS pedidos,
             SUM(total) AS ventas
-        FROM pedidos_agrupados
-        GROUP BY fecha, shipping_country
+        FROM shopify.raw_orders
+        WHERE fulfillment_created_at BETWEEN %s AND %s
+        {f"AND shipping_country = %s" if country != 'Todos' else ""}
+        GROUP BY DATE_TRUNC('{date_trunc}', fulfillment_created_at), shipping_country
         ORDER BY fecha;
         """
         params = [start_date, end_date]
@@ -77,43 +68,70 @@ except Exception as e:
 if df.empty:
     st.warning("⚠️ No hay datos para el rango seleccionado.")
 else:
-    df = df.sort_values("fecha")
+    # Preparar datos
     df["fecha"] = pd.to_datetime(df["fecha"])
-    df["pedidos"] = pd.to_numeric(df["pedidos"], errors="coerce")
-    df["ventas"] = pd.to_numeric(df["ventas"], errors="coerce")
+    df["pedidos"] = pd.to_numeric(df["pedidos"], errors="coerce").fillna(0)
+    df["ventas"] = pd.to_numeric(df["ventas"], errors="coerce").fillna(0)
 
+    # Si es "Todos" los países, agrupamos
+    if country == "Todos":
+        df = df.groupby("fecha").agg({"pedidos": "sum", "ventas": "sum"}).reset_index()
+
+    # Crear gráfico
     fig = go.Figure()
 
-    # Eje 1: pedidos
+    # Línea de pedidos (eje izquierdo)
     fig.add_trace(go.Scatter(
         x=df["fecha"],
         y=df["pedidos"],
         mode="lines+markers",
         name="Pedidos",
+        line=dict(color="#1f77b4"),
+        marker=dict(size=8),
         yaxis="y1"
     ))
 
-    # Eje 2: ventas
+    # Línea de ventas (eje derecho)
     fig.add_trace(go.Scatter(
         x=df["fecha"],
         y=df["ventas"],
         mode="lines+markers",
         name="Ventas (€)",
+        line=dict(color="#ff7f0e"),
+        marker=dict(size=8),
         yaxis="y2"
     ))
 
+    # Configuración del layout
     fig.update_layout(
         title=f"Evolución {vista.lower()} de pedidos y ventas - {country}",
-        xaxis=dict(title="Fecha"),
-        yaxis=dict(title="Pedidos", side="left"),
-        yaxis2=dict(title="Ventas (€)", overlaying="y", side="right"),
+        xaxis=dict(
+            title="Fecha",
+            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m"
+        ),
+        yaxis=dict(
+            title="Pedidos",
+            side="left",
+            color="#1f77b4"
+        ),
+        yaxis2=dict(
+            title="Ventas (€)",
+            overlaying="y",
+            side="right",
+            color="#ff7f0e"
+        ),
         legend=dict(x=0.01, y=0.99),
-        margin=dict(l=40, r=40, t=60, b=40),
-        hovermode="x unified"
+        margin=dict(l=50, r=50, t=60, b=40),
+        hovermode="x unified",
+        template="plotly_white"
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-    # Vista previa
+    # Vista previa de datos
     st.subheader("📄 Vista previa de los datos")
-    st.dataframe(df)
+    st.dataframe(df.style.format({
+        "fecha": "{:%Y-%m-%d}",
+        "pedidos": "{:.0f}",
+        "ventas": "€{:.2f}"
+    }))
