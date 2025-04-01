@@ -1,8 +1,10 @@
 import streamlit as st
 import pandas as pd
 import psycopg2
-import plotly.graph_objects as go
 from datetime import date, timedelta
+
+# Configuración de la página
+st.set_page_config(page_title="📦 Análisis de Pedidos y Ventas", layout="wide")
 
 # 🔌 Conexión a PostgreSQL
 def get_connection():
@@ -49,16 +51,24 @@ def fetch_evolution(start_date, end_date, country, vista):
     return df
 
 # 🖥️ Interfaz
-st.title("📦 Evolución de pedidos y ventas")
+st.title("📦 Análisis de Pedidos y Ventas")
 
-# Filtros
-default_start = date.today() - timedelta(days=30)
-default_end = date.today()
+# Filtros en columnas para mejor presentación
+col1, col2, col3 = st.columns([2, 2, 1])
 
-start_date = st.date_input("📅 Desde", default_start)
-end_date = st.date_input("📅 Hasta", default_end)
-country = st.selectbox("🌍 País", get_country_list())
-vista = st.radio("📊 Vista", ["Diaria", "Mensual"], horizontal=True)
+with col1:
+    default_start = date.today() - timedelta(days=30)
+    start_date = st.date_input("📅 Desde", default_start, key="start_date")
+
+with col2:
+    default_end = date.today()
+    end_date = st.date_input("📅 Hasta", default_end, key="end_date")
+
+with col3:
+    country = st.selectbox("🌍 País", get_country_list(), key="country")
+
+# Filtro de vista (diaria o mensual)
+vista = st.radio("📊 Vista", ["Diaria", "Mensual"], horizontal=True, key="vista")
 
 # Cargar datos
 try:
@@ -82,68 +92,73 @@ else:
     else:
         df = df[["fecha", "shipping_country", "pedidos", "ventas"]]
 
-    # Depuración: Mostrar datos antes de graficar
-    st.subheader("Datos antes de graficar:")
-    st.dataframe(df)
+    # Formatear datos para la tabla
+    df_display = df.copy()
+    df_display["fecha"] = df_display["fecha"].apply(lambda x: x.strftime("%Y-%m-%d"))
+    df_display["pedidos"] = df_display["pedidos"].astype(int)
+    df_display["ventas"] = df_display["ventas"].apply(lambda x: f"€{x:,.2f}")
 
-    # Crear gráfico
-    fig = go.Figure()
+    # Renombrar columnas para la tabla
+    df_display = df_display.rename(columns={
+        "fecha": "Fecha",
+        "shipping_country": "País",
+        "pedidos": "Pedidos",
+        "ventas": "Ventas"
+    })
 
-    # Añadir línea de pedidos (eje izquierdo)
-    fig.add_trace(go.Scatter(
-        x=df["fecha"],
-        y=df["pedidos"],
-        name="Pedidos",
-        mode="lines+markers",
-        line=dict(color="blue"),
-        marker=dict(size=8)
-    ))
+    # Estilo personalizado para la tabla
+    def style_dataframe(df):
+        return df.style.set_table_styles([
+            # Estilo para el encabezado
+            {
+                "selector": "th",
+                "props": [
+                    ("background-color", "#1f77b4"),
+                    ("color", "white"),
+                    ("font-weight", "bold"),
+                    ("text-align", "center"),
+                    ("border", "1px solid #ddd"),
+                    ("padding", "8px")
+                ]
+            },
+            # Estilo para las filas
+            {
+                "selector": "td",
+                "props": [
+                    ("text-align", "center"),
+                    ("border", "1px solid #ddd"),
+                    ("padding", "8px")
+                ]
+            },
+            # Estilo para filas alternas
+            {
+                "selector": "tr:nth-child(even)",
+                "props": [
+                    ("background-color", "#f2f2f2")
+                ]
+            },
+            # Estilo para filas al pasar el mouse
+            {
+                "selector": "tr:hover",
+                "props": [
+                    ("background-color", "#e6f3ff")
+                ]
+            }
+        ]).set_properties(**{
+            "font-family": "Arial, sans-serif",
+            "font-size": "14px"
+        }).hide(axis="index")  # Ocultar el índice
 
-    # Añadir línea de ventas (eje derecho)
-    fig.add_trace(go.Scatter(
-        x=df["fecha"],
-        y=df["ventas"],
-        name="Ventas (€)",
-        mode="lines+markers",
-        line=dict(color="orange"),
-        marker=dict(size=8),
-        yaxis="y2"
-    ))
+    # Mostrar tabla
+    st.subheader(f"Datos de pedidos y ventas - {country} ({vista})")
+    st.write(style_dataframe(df_display))
 
-    # Configurar el layout del gráfico
-    fig.update_layout(
-        title=f"Evolución {vista.lower()} de pedidos y ventas - {country}",
-        xaxis=dict(
-            title="Fecha",
-            type="date",
-            tickformat="%Y-%m-%d" if vista == "Diaria" else "%Y-%m"
-        ),
-        yaxis=dict(
-            title="Pedidos",
-            side="left",
-            color="blue",
-            range=[0, df["pedidos"].max() * 1.2]  # Margen adicional para visibilidad
-        ),
-        yaxis2=dict(
-            title="Ventas (€)",
-            side="right",
-            overlaying="y",
-            color="orange",
-            range=[0, df["ventas"].max() * 1.2]  # Margen adicional para visibilidad
-        ),
-        legend=dict(x=0.01, y=0.99),
-        hovermode="x unified",
-        template="plotly_white",
-        margin=dict(l=50, r=50, t=60, b=40)
-    )
-
-    # Mostrar gráfico
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Mostrar tabla de datos
-    st.subheader("Vista previa de los datos")
-    st.dataframe(df.style.format({
-        "fecha": "{:%Y-%m-%d}",
-        "pedidos": "{:.0f}",
-        "ventas": "€{:.2f}"
-    }))
+    # Resumen estadístico
+    st.subheader("📊 Resumen")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Pedidos", df["pedidos"].sum())
+    with col2:
+        st.metric("Total Ventas", f"€{df['ventas'].sum():,.2f}")
+    with col3:
+        st.metric("Promedio Diario", f"€{df['ventas'].mean():,.2f}")
