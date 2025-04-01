@@ -91,10 +91,9 @@ else:
     else:
         df = df[["fecha", "shipping_country", "pedidos", "ventas"]]
 
+    # Calcular promedio de pedidos diario
+    df["promedio_pedidos_diario"] = df["pedidos"] / (end_date - start_date).days if (end_date - start_date).days > 0 else df["pedidos"]
     st.dataframe(df)
-
-#    # Calcular promedio de pedidos diario
-#    df["promedio_pedidos_diario"] = df["pedidos"] / (end_date - start_date).days if (end_date - start_date).days > 0 else df["pedidos"]
 #
 #    # KPIs antes de la tabla
 #    st.markdown("### 📊 Resumen Estadístico")
