@@ -28,26 +28,26 @@ def get_country_list():
 def fetch_evolution(start_date, end_date, country):
     with get_connection() as conn:
         query = f"""
-        WITH pedidos_por_dia AS (
+                WITH pedidos_por_dia AS (
             SELECT
                 order_id,
                 fulfillment_created_at::date AS fecha,
                 shipping_country,
-                MAX(total) AS total
+				count(distinct(pedido_id)) as num_pedidos,
+                sum(total) AS imp_pedidos
             FROM shopify.raw_orders
-            WHERE fulfillment_created_at BETWEEN %s AND %s
-            {f"AND shipping_country = %s" if country != 'Todos' else ""}
+            WHERE 1=1 and {f"AND shipping_country = %s" if country != 'Todos' else ""}
             GROUP BY order_id, fecha, shipping_country
         )
         SELECT 
-            fecha,
-            shipping_country,
-            COUNT(order_id) AS pedidos,
-            SUM(total) AS ventas
+            DATE_TRUNC('month', fecha) AS mes,
+            COUNT(num_pedidos) AS pedidos,
+            SUM(imp_pedidos) AS ventas
         FROM pedidos_por_dia
-        GROUP BY fecha, shipping_country
-        ORDER BY fecha;
+        GROUP BY DATE_TRUNC('month', fecha)
+        ORDER BY DATE_TRUNC('month', fecha) desc;
         """
+        
         params = [start_date, end_date]
         if country != 'Todos':
             params.append(country)
